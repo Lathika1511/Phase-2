@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>Cracking the Market Code</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 20px 15px;
+      max-width: 350px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+    header h1 {
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #00d2ff;
+      text-shadow: 0 0 5px #00d2ff88;
+    }
+    header p {
+      font-weight: 400;
+      font-size: 1rem;
+      color: #a0cfff;
+      margin-top: 0;
+    }
+    form {
+      width: 100%;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    input, select, button {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    input, select {
+      background-color: #203a43;
+      color: #cce7ff;
+      box-shadow: inset 0 0 5px #1e2e37;
+    }
+    input::placeholder {
+      color: #7aaedc;
+    }
+    input:focus, select:focus {
+      background-color: #246589;
+      color: #eef9ff;
+      box-shadow: 0 0 8px #00d2ffaa;
+    }
+    button {
+      background: #00d2ff;
+      color: #012e42;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px #00b4ffaa;
+      user-select: none;
+    }
+    button:active {
+      background: #0094db;
+      box-shadow: none;
+    }
+    #chart-container {
+      width: 100%;
+      height: 360px;
+      border-radius: 12px;
+      background: #203a43aa;
+      box-shadow: 0 0 10px #00d2ff99;
+      padding: 10px;
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 12px;
+    }
+    footer {
+      margin-top: auto;
+      font-size: 0.8rem;
+      color: #5599cc88;
+      text-align: center;
+      padding-bottom: 10px;
+      user-select: none;
+    }
+    /* Mobile adjustments */
+    @media (max-width: 350px) {
+      body {
+        padding: 15px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cracking the Market Code</h1>
+    <p>AI-driven stock price prediction using time series analysis</p>
+  </header>
+
+  <form id="predict-form" onsubmit="event.preventDefault(); predictStock();">
+    <label for="stock-symbol" style="font-weight:600; margin-bottom: 4px;">Select Stock Symbol</label>
+    <select id="stock-symbol" required>
+      <option value="" disabled selected>Select a stock</option>
+      <option value="AAPL">AAPL - Apple Inc.</option>
+      <option value="GOOGL">GOOGL - Alphabet Inc.</option>
+      <option value="AMZN">AMZN - Amazon.com Inc.</option>
+      <option value="MSFT">MSFT - Microsoft Corp.</option>
+      <option value="TSLA">TSLA - Tesla Inc.</option>
+    </select>
+    <button type="submit">Predict</button>
+  </form>
+
+  <div id="chart-container">
+    <canvas id="predictionChart" aria-label="Stock price prediction chart" role="img"></canvas>
+  </div>
+
+  <footer>
+    &copy; 2024 Cracking the Market Code
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('predictionChart').getContext('2d');
+    let predictionChart;
+
+    function generateFakeData() {
+      // Generate dummy past actual prices and predicted future prices
+      const actualPrices = [];
+      const predictedPrices = [];
+      const labels = [];
+      let basePrice = 100 + Math.random() * 100;
+      for (let i = 15; i > 0; i--) {
+        labels.push(`Day -${i}`);
+        basePrice += ((Math.random() - 0.5) * 3);
+        actualPrices.push(Number(basePrice.toFixed(2)));
+      }
+      let predictedBase = actualPrices[actualPrices.length-1];
+      for (let i = 1; i <= 15; i++) {
+        labels.push(`Day +${i}`);
+        predictedBase += ((Math.random() - 0.2) * 4);
+        predictedPrices.push(Number(predictedBase.toFixed(2)));
+      }
+
+      return { labels, actualPrices, predictedPrices };
+    }
+
+    function createChart(data) {
+      if (predictionChart) {
+        predictionChart.destroy();
+      }
+      predictionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Actual Price',
+              data: data.actualPrices.concat(new Array(data.predictedPrices.length).fill(null)),
+              borderColor: '#00d2ff',
+              backgroundColor: '#00d2ff33',
+              borderWidth: 3,
+              tension: 0.3,
+              fill: true,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+            },
+            {
+              label: 'Predicted Price',
+              data: new Array(data.actualPrices.length).fill(null).concat(data.predictedPrices),
+              borderColor: '#ffdd57',
+              backgroundColor: '#ffdd5733',
+              borderWidth: 3,
+              borderDash: [8,6],
+              tension: 0.3,
+              fill: true,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+            }
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false,
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 0,
+                minRotation: 0,
+                color: '#cce7ff',
+                maxTicksLimit: 12,
+              },
+              grid: {
+                color: '#203a4322',
+              },
+            },
+            y: {
+              ticks: {
+                color: '#cce7ff',
+                beginAtZero: false,
+              },
+              grid: {
+                color: '#203a4322',
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#a0cfff',
+                font: { weight: '600' }
+              }
+            },
+            tooltip: {
+              backgroundColor: '#203a43dd',
+              titleColor: '#00d2ff',
+              bodyColor: '#eef9ff',
+              cornerRadius: 6,
+              displayColors: false,
+            }
+          },
+        }
+      });
+    }
+
+    function predictStock() {
+      const stockSymbol = document.getElementById('stock-symbol').value;
+      if (!stockSymbol) {
+        alert('Please select a stock symbol.');
+        return;
+      }
+      // For demonstration, generate fake data and display chart
+      const data = generateFakeData();
+      createChart(data);
+    }
+  </script>
+</body>
+</html>
+
